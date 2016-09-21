@@ -1,0 +1,120 @@
+package javaSeed;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.testng.Reporter;
+import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
+import com.relevantcodes.extentreports.ExtentReports;
+import com.relevantcodes.extentreports.ExtentTest;
+import com.relevantcodes.extentreports.LogStatus;
+
+import javaSeed.constants.Const;
+import javaSeed.driverSheet.TriggerTestSteps;
+import javaSeed.utils.ParseExcelFile;
+import javaSeed.utils.SetDriver;
+
+
+public class TriggerJavaSeed {
+	
+	@BeforeSuite
+	public void DefineDriver(){
+		Const.driver = SetDriver.SetWebDriver(Const.driver, Const.ENVIRONMENT_DATA_ARRAY[1][2]);	//??????????? Hard-Coded ????????????????
+	}
+	
+	
+	@DataProvider
+	public String[][] arrTestScenario(){
+		
+		// Consuming data from Test Scenario Sheet in to a local 2D array. Notice the data pulled was Flagged executable data
+		return Const.SHTEST_SCENARIOS;
+	}
+	
+	@SuppressWarnings("rawtypes")
+	@Test (dataProvider = "arrTestScenario")
+	public void RunTestScenarios(String[] Scenarios) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
+		
+		// Consuming data from Test Scenario Sheet in to a local 2D array. Notice the data pulled was Flagged executable data
+		String[] arrTestScenario = Scenarios;
+		// Consuming HasMap of the Test Steps Sheet data in to local HashMap variable
+		HashMap<Integer,String[]> LocMAP_TESTSTEP_ARRLIST = Const.MAP_TESTSTEP_ARRLIST;
+		
+		ArrayList<String[]> ArrListScenariosTestSteps = new ArrayList<String[]>(1);
+		
+	    ParseExcelFile oTestCaseData = new ParseExcelFile();
+		String arrTestCaseData[][];
+		
+		int ScenarioIndexFrom=0,ScenarioIndexTo=0;
+		
+		// Initializing Iterator object for HashMap of Test Step ArrayList 
+		Iterator it = LocMAP_TESTSTEP_ARRLIST.entrySet().iterator();
+		// Loop Each Test Step Row for Scenario in primary Loop
+	    while (it.hasNext()) {
+	        Map.Entry pair = (Map.Entry)it.next();
+	        // Putting Array from each row Array List to a temporary Array
+	        String[] TestStepRow = (String[]) pair.getValue();
+	        	// Compare the Scenario Name from Scenario Sheet and Test Step Sheet if True...	        
+		        if (arrTestScenario[0].contentEquals(TestStepRow[0])){
+		        	ArrListScenariosTestSteps.add(TestStepRow);
+		        }
+	    }
+	    
+	    // If Scenario in loop has Function defined then run below code
+	    if (ArrListScenariosTestSteps.size()>0){	    	
+			
+			Const.etScenarios = Const.oExtent.startTest(Scenarios[0], Scenarios[3]);
+			//Const.etScenarios.log(LogStatus.INFO, "Test Scenario Execution Started for - "+Scenarios[0]+":"+Scenarios[3]);
+	    	
+			//Reporter.log(Scenarios[0]+": "+Scenarios[3]+" - Scenario Execution Starts");
+	    	// Getting Scenario Execution Index Defined on testScenarios Sheet
+	    	String[] arrSceIndex = arrTestScenario[2].split("-");
+	    	ScenarioIndexFrom = Integer.parseInt(arrSceIndex[0]);
+	    	ScenarioIndexTo = Integer.parseInt(arrSceIndex[1]);
+	    	
+	    	// Pulling Test Case Data for the current Scenario in a 2D Array 
+			arrTestCaseData = oTestCaseData.ReadExcel(Const.JAVA_SEED_DRIVERSHEET_PATH, "tc"+arrTestScenario[0]);	
+			
+			
+			// Loop for Scenario Execution Index, 'Iteration Index' column on the testScenario Sheet 
+			for (int ScenItr=ScenarioIndexFrom;ScenItr<=ScenarioIndexTo;ScenItr++){
+
+		    	Const.etTestCases = Const.oExtent.startTest(arrTestCaseData[ScenItr][0], arrTestCaseData[ScenItr][1]);
+		    	//Const.etTestCases.log(LogStatus.INFO, "Test Case Execution Started for - "+arrTestCaseData[ScenItr][0]+":"+ arrTestCaseData[ScenItr][1]);
+				
+				// Loop Each Scenario Execution Index, Loop through each Function defined in the testSteps sheets.
+			    for (int j=0;j<ArrListScenariosTestSteps.size();j++){
+			    	
+			    	TriggerTestSteps.setArrListScenariosTestSteps(ArrListScenariosTestSteps.get(j));
+			    	TriggerTestSteps.setArrTestCaseData(arrTestCaseData[ScenItr]);
+			    	// ###########################################################
+			    	TriggerTestSteps.TestStepsExecution();
+			    	// ###########################################################				    	
+			    	//System.out.println(arrTestScenario[i][0]+" -- "+ArrListScenariosTestSteps.get(j).length+" --- "+arrTestCaseData[ScenItr].toString());
+			    }
+			    System.out.println(Const.etTestCases.getRunStatus());
+			    Const.oExtent.endTest(Const.etTestCases);
+			   // Const.etTestCases.log(LogStatus.INFO, "Test Case Execution Ended for - "+arrTestCaseData[ScenItr][0]+":"+ arrTestCaseData[ScenItr][1]);
+			    Const.etScenarios.appendChild(Const.etTestCases);
+			}
+		//Const.etScenarios.log(LogStatus.INFO, "Scenario Execution Ends for - "+Scenarios[0]+": "+Scenarios[2]);
+		Const.oExtent.endTest(Const.etScenarios);
+	    }
+
+	  }
+	
+	@AfterSuite
+	public void CloseDriver(){
+
+	  Const.oExtent.flush();
+	  Const.driver.get(Const.JAVA_SEED_EXTENTREPORT);
+	  
+	}
+		
+
+}
