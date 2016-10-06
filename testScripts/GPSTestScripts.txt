@@ -1,0 +1,84 @@
+package javaSeed.testScripts.GPS;
+
+import org.testng.Assert;
+import org.testng.ITestResult;
+import org.testng.Reporter;
+
+import com.relevantcodes.extentreports.LogStatus;
+
+import javaSeed.constants.Const;
+import javaSeed.objectRepository.OR;
+
+public class GPSTestScripts {
+	
+	private String MethodName;
+	
+	public String getMethodName() {
+		return MethodName;
+	}
+	public void setMethodName(String methodName) {
+		MethodName = methodName;
+	}
+
+	
+	public void NavigateToGPS(){
+		try{		
+			// Example of getting and implementing Web Element from the Application by reading O.R HashMap by Object Name as Key 
+			
+			Const.driver.get(Const.ENVIRONMENT_DATA_ARRAY[1][3]);
+			Const.driver.manage().window().maximize();
+			Const.etTestCases.log(LogStatus.INFO, "Navigate To GPS url - "+Const.ENVIRONMENT_DATA_ARRAY[1][3]);
+		}
+		catch(Throwable t){
+			if(!t.equals(null)){
+				Const.etTestCases.log(LogStatus.FATAL, "Error while Navigation To GPS url - "+Const.ENVIRONMENT_DATA_ARRAY[1][3]);
+			}
+		}
+		
+	}
+	
+
+
+	public void LoginToGPS(String UserName, String Password){
+		try{
+			// Example of getting and implementing Web Element from the Application by reading O.R HashMap by Object Name as Key 
+			
+			OR.FindWebElement(Const.driver, Const.ORMap.get("GPS_UserName")).sendKeys(UserName);
+			OR.FindWebElement(Const.driver, Const.ORMap.get("GPS_Password")).sendKeys(Password);
+			OR.FindWebElement(Const.driver, Const.ORMap.get("GPS_LoginButton")).submit();
+			
+			while (OR.FindWebElement(Const.driver, Const.ORMap.get("GPS_WaitingIcon")).isDisplayed()==true){
+					Thread.sleep(1000);
+			}
+		}
+		catch(Throwable t){
+			if(!t.equals(null)){
+				Const.etTestCases.log(LogStatus.ERROR, "Error on GPS Login: "+t.toString());
+				return;
+			}
+		}
+		
+		try{
+			Assert.assertEquals("Fidelity GPS | Guided Portfolio Summary SM", Const.driver.getTitle());
+		}
+		catch(Throwable t){
+			if(!t.equals(null)){
+				Const.etTestCases.log(LogStatus.FAIL, "GPS has Not landed on correct page: "+Const.driver.getTitle());	
+				return;
+			}
+		}
+		Const.etTestCases.log(LogStatus.PASS, "GPS has landed on correct page: "+Const.driver.getTitle());
+		
+
+			
+	}
+	
+	
+	public void LogOutGPS(){
+
+		// Example of getting and implementing Web Element from the Application by reading O.R HashMap by Object Name as Key 
+		
+		OR.FindWebElement(Const.driver, Const.ORMap.get("GPS_LogOutLink")).click();
+		Const.etTestCases.log(LogStatus.INFO, "Logged out from GPS successfully.");
+	}
+}
