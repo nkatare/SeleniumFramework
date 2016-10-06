@@ -1,0 +1,1 @@
+keytool -import -file "C:\Users\a578862\Desktop\root.cer" -trustcacerts -alias default -storetype jks -keystore "C:\Program Files\Java\jdk1.7.0_03\jre\lib\security\cacerts" 
