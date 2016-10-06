@@ -1,0 +1,136 @@
+package personlizedALM;
+
+import java.net.HttpURLConnection;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import almPackages.Assert;
+import almPackages.Constants;
+import almPackages.Entities;
+import almPackages.Entity;
+import almPackages.EntityMarshallingUtils;
+import almPackages.Response;
+import almPackages.Entity.Fields.Field;
+
+public class UpdateALMEntity {
+	
+	public static Boolean UpdateTestCaseInstance(String TestInstanceID,String Status, String ActualTester) throws Exception{
+		
+		 String strTestInstanceToUpdateUrl=null;
+	     DateFormat DateFormat = new SimpleDateFormat("YYYY-MM-dd");
+	     DateFormat TimeFormat = new SimpleDateFormat("HH:mm:ss");
+	 	 //get current date time with Date()
+	     Date date = new Date();
+	     
+	     UpdateALMEntity UpdateALM = new UpdateALMEntity();
+	     
+        boolean loginState = ALMConnection.login(ALMConnection.getCon(), Constants.USERNAME, Constants.PASSWORD);
+        
+        if (loginState == false){
+        	ALMConnection.AuthLogin(
+                    "https://" + Constants.HOST + "/qcbin",
+                    Constants.DOMAIN,
+                    Constants.PROJECT,
+                    Constants.USERNAME,
+                    Constants.PASSWORD);
+        }
+        Assert.assertTrue("login failed.", loginState);       
+
+        Assert.assertTrue(
+                "cookie string doesn't contain QCSession.",
+                ALMConnection.getCon().getCookieString().contains("QCSession"));
+		
+        String strTestInstanceURL =
+        		ALMConnection.getCon().buildEntityCollectionUrl("test-instance");
+        strTestInstanceToUpdateUrl =
+        		strTestInstanceURL+"?query={id"+TestInstanceID+"}";
+
+        
+        String updatedTestInstanceXml =generateFieldUpdateXml("test-instances",
+                Constants.generateFieldXml("exec-date",DateFormat.format(date))+
+                	Constants.generateFieldXml("exec-time",TimeFormat.format(date))+
+                		Constants.generateFieldXml("status",Status)+
+                			Constants.generateFieldXml("actual-tester",ActualTester));
+        
+        // Create entity (we could have instantiated the entity
+        // and used methods to set the new values
+        Entity e =
+                EntityMarshallingUtils.marshal(Entity.class, updatedTestInstanceXml);
+
+        // Do update operation
+        String updateResponseEntityXml =
+        		UpdateALM.updateEntity(
+        				strTestInstanceToUpdateUrl,
+                        EntityMarshallingUtils.unmarshal(Entity.class, e)).toString();
+        
+        // Entity xml from server -> entity class instance
+        Entities updateResponseEntity =
+                EntityMarshallingUtils.marshal(Entities.class,
+                        updateResponseEntityXml);
+        
+        boolean updatedValueEncountered = false;
+
+        for (Entity entity : updateResponseEntity.getEntity()) {
+        List<Field> fields = entity.getFields().getField();
+        	for (Field field : fields) {
+	            if (field.getName().equals("status")) {
+	                Assert.assertEquals(
+	                        "updated value different than expected",
+	                        field.getValue().iterator().next(),
+	                        Status);
+	                updatedValueEncountered = true;
+	                break;
+	            }
+        	}
+        }
+        Assert.assertTrue("did not encounter updated value",
+                updatedValueEncountered);
+
+		return updatedValueEncountered;
+	}
+	
+    /**
+     * @param field
+     *            the field name to update
+     * @param value
+     *            the new value to use
+     * @return an xml that can be used to update an entity's single
+     *          given field to given value
+     */
+    private static String generateFieldUpdateXml(String EntityType, String XMLData) {
+        return "<Entity Type=\""+EntityType+"\"><Fields>"
+                + XMLData
+                + "</Fields></Entity>";
+    }
+    
+    /**
+     * @param entityUrl
+     *            to update
+     * @param updatedEntityXml
+     *            New entity descripion. Only lists updated fields.
+     *            Unmentioned fields will not change.
+     *
+     * @return xml description of the entity on the serverside, after update.
+     * @throws Exception
+     */
+    private Response updateEntity(String entityUrl, String updatedEntityXml)
+            throws Exception {
+    	
+    	Map<String, String> header = ALMConnection.getHeader();
+    	header.put("Content-Type", "application/xml");
+    	header.put("Accept", "application/xml");
+
+        Response putResponse =
+        		ALMConnection.getCon().httpPut(entityUrl, updatedEntityXml.getBytes(), header);
+
+        if (putResponse.getStatusCode() != HttpURLConnection.HTTP_OK) {
+            throw new Exception(putResponse.toString());
+        }
+
+        return putResponse;
+    }
+
+}

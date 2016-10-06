@@ -1,0 +1,188 @@
+package personlizedALM;
+
+import java.net.HttpURLConnection;
+import java.util.HashMap;
+import java.util.Map;
+import almPackages.Assert;
+import almPackages.Base64Encoder;
+import almPackages.Response;
+import almPackages.RestConnector;
+
+/**
+ * This example shows how to login/logout/authenticate to the server with REST.
+ * note that this is a  rather "thin" layer over {@link RestConnector} because
+ * these operations are *almost* HTML standards.
+ */
+
+public class ALMConnection {
+	
+	public static RestConnector Restcon;
+
+    public static RestConnector getCon() {
+		return Restcon;
+	}
+
+	public static void setCon(RestConnector Restcon) {
+		ALMConnection.Restcon = Restcon;
+	}
+	
+	private static Map<String, String> header = new HashMap<String, String>();
+
+    public static Map<String, String> getHeader() {
+		return header;
+	}
+
+	public static void setHeader(Map<String, String> header) {
+		ALMConnection.header = header;
+	}
+
+
+    public static  void AuthLogin (final String serverUrl,
+          final String domain, final String project, String username,
+          String password) throws Exception {
+    	
+    	Restcon =
+                RestConnector.getInstance().init(
+                        new HashMap<String, String>(),
+                        serverUrl,
+                        domain,
+                        project);
+
+
+        //if we're authenticated we'll get a null, otherwise a URL where we should login at (we're not logged in, so we'll get a URL).
+        String authenticationPoint = ALMConnection.isAuthenticated(Restcon);
+        Assert.assertTrue(
+"response from isAuthenticated means we're authenticated. that can't be.",
+                authenticationPoint != null);
+
+        //now we login to previously returned URL.
+        boolean loginResponse =
+        		ALMConnection.login(Restcon, authenticationPoint, username, password);
+        Assert.assertTrue("failed to login.", loginResponse);
+        Assert.assertTrue(
+ "login did not cause creation of Light Weight Single Sign On(LWSSO) cookie.",
+ 		Restcon.getCookieString().contains("LWSSO_COOKIE_KEY"));
+
+        //proof that we are indeed logged in
+        Assert.assertNull(
+                "isAuthenticated returned not authenticated after login.",
+                ALMConnection.isAuthenticated(Restcon));
+    }
+
+    //private RestConnector Restcon = ReadExample.getCon();
+    
+/*
+    public AuthLogin() {
+        con = RestConnector.getInstance();
+    }*/
+
+    /**
+     * @param username
+     * @param password
+     * @return true if authenticated at the end of this method.
+     * @throws Exception
+     *
+     * convenience method used by other examples to do their login
+     */
+    public static boolean login(RestConnector Restcon, String username, String password) throws Exception {
+
+        String authenticationPoint = isAuthenticated(Restcon);
+        if (authenticationPoint != null) {
+            return login(Restcon, authenticationPoint, username, password);
+        }
+        return true;
+    }
+
+    /**
+     * @param loginUrl
+     *            to authenticate at
+     * @param username
+     * @param password
+     * @return true on operation success, false otherwise
+     * @throws Exception
+     *
+     * Logging in to our system is standard http login (basic authentication),
+     * where one must store the returned cookies for further use.
+     */
+    public static boolean login(RestConnector Restcon, String loginUrl, String username, String password)
+        throws Exception {
+
+        //create a string that lookes like:
+        // "Basic ((username:password)<as bytes>)<64encoded>"
+        byte[] credBytes = (username + ":" + password).getBytes();
+        String credEncodedString = "Basic " + Base64Encoder.encode(credBytes);
+
+       
+        header.put("Authorization", credEncodedString);        
+
+        Response response = Restcon.httpGet(loginUrl, null, header);
+        
+        Restcon.getQCSession();
+        
+        boolean ret = response.getStatusCode() == HttpURLConnection.HTTP_OK;
+
+        return ret;
+    }
+
+    /**
+     * @return true if logout successful
+     * @throws Exception
+     *             close session on server and clean session cookies on client
+     */
+    public static boolean logout() throws Exception {
+
+     //note the get operation logs us out by setting authentication cookies to:
+     // LWSSO_COOKIE_KEY="" via server response header Set-Cookie
+        Response response =
+        		Restcon.httpGet(Restcon.buildUrl("authentication-point/logout"),
+                null, null);
+
+        return (response.getStatusCode() == HttpURLConnection.HTTP_OK);
+
+    }
+
+    /**
+     * @return null if authenticated.<br>
+     *         a url to authenticate against if not authenticated.
+     * @throws Exception
+     */
+    public static String isAuthenticated(RestConnector Restcon) throws Exception {
+
+        String isAuthenticateUrl = Restcon.buildUrl("rest/is-authenticated");
+        String ret;
+
+        Response response = Restcon.httpGet(isAuthenticateUrl, null, null);
+        int responseCode = response.getStatusCode();
+
+        //if already authenticated
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+
+            ret = null;
+        }
+
+        //if not authenticated - get the address where to authenticate
+        // via WWW-Authenticate
+        else if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED) {
+
+            Iterable<String> authenticationHeader =
+                    response.getResponseHeaders().get("WWW-Authenticate");
+
+            String newUrl =
+                authenticationHeader.iterator().next().split("=")[1];
+            newUrl = newUrl.replace("\"", "");
+            newUrl += "/authenticate";
+            ret = newUrl;
+        }
+
+        //Not ok, not unauthorized. An error, such as 404, or 500
+        else {
+
+            throw response.getFailure();
+        }
+
+        return ret;
+    }
+
+
+}
+

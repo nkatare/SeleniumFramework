@@ -1,0 +1,126 @@
+package personlizedALM;
+
+import java.net.HttpURLConnection;
+import java.util.List;
+
+import almPackages.Assert;
+import almPackages.Constants;
+import almPackages.Entities;
+import almPackages.Entity;
+import almPackages.EntityMarshallingUtils;
+import almPackages.Response;
+import almPackages.Entity.Fields.Field;
+
+public class ReadALMEntity {
+
+	public static String GetTestCaseInstanceID(String TestSetFodlerName, String TestSetName, String TestCaseID) throws Exception{
+		
+			String testSetFoldersUrl, strTestSetFodlerID = null, 
+						testSetUrl, strTestSetID,
+							strTestCaseInstanceURL,strTestInstanceID = null;
+			
+		try{
+	        boolean loginState = ALMConnection.login(ALMConnection.getCon(), Constants.USERNAME, Constants.PASSWORD);
+	        
+	        if (loginState == false){
+	        	ALMConnection.AuthLogin(
+	                    "https://" + Constants.HOST + "/qcbin",
+	                    Constants.DOMAIN,
+	                    Constants.PROJECT,
+	                    Constants.USERNAME,
+	                    Constants.PASSWORD);
+	        }
+	        Assert.assertTrue("login failed.", loginState);       
+	
+	        // After accessing a resource, a qc session is implicitly created.
+	        // The following code asserts this.
+	        Assert.assertTrue(
+	                "cookie string doesn't contain QCSession.",
+	                ALMConnection.getCon().getCookieString().contains("QCSession"));
+	        
+	     // ############### Block to request and grab Test Set Folder ID ############### 
+	        testSetFoldersUrl = ALMConnection.getCon().buildEntityCollectionUrl("test-set-folder");
+	        
+	        //query a collection of entities:
+	        StringBuilder TestFolder = new StringBuilder();
+	        //The query - where field name has a  value that starts with the name of the requirement we posted
+	        TestFolder.append("query={name[" + TestSetFodlerName + "]}");
+	        //The fields to display: id, name
+	        TestFolder.append("&fields=id,name");
+	
+	
+	        strTestSetFodlerID = GetEntityIDFromResponse(testSetFoldersUrl,TestFolder.toString());
+	        
+	     // ############### Block to request and grab Test Set ID ############### 
+	        testSetUrl = ALMConnection.getCon().buildEntityCollectionUrl("test-set");
+	        
+	        //query a collection of entities:
+	        StringBuilder TestSet = new StringBuilder();
+	        //The query - where field name has a  value that starts with the name of the requirement we posted
+	        TestSet.append("query={parent-id"+strTestSetFodlerID+";name[" + TestSetName + "]}");
+	        //The fields to display: id, name
+	        TestSet.append("&fields=id,name");
+	        
+	        strTestSetID = GetEntityIDFromResponse(testSetUrl,TestSet.toString());
+	        
+	     // ############### Block to request and grab Test Case Instance ID ############### 
+	        strTestCaseInstanceURL = ALMConnection.getCon().buildEntityCollectionUrl("test-instance");
+	        
+	        //query a collection of entities:
+	        StringBuilder TestInstance = new StringBuilder();
+	        //The query - where field name has a  value that starts with the name of the requirement we posted
+	        TestInstance.append("query={cycle-id"+strTestSetID+";test-id[" + TestCaseID + "]}");
+	        //The fields to display: id, name
+	        TestInstance.append("&fields=id,name");
+	        
+	        strTestInstanceID = GetEntityIDFromResponse(strTestCaseInstanceURL,TestInstance.toString());
+		}
+		catch (Exception e){
+			if (!e.equals(null)){
+			    strTestInstanceID = "0000";
+			}
+		}
+	return strTestInstanceID;
+	}
+
+	
+
+	public static String GetEntityIDFromResponse(String EntityURL, String QueryURL) throws Exception{
+		
+		Response serverResponse;
+		String strResponse = null,strEntityID=null;
+		
+        serverResponse =
+        		ALMConnection.getCon().httpGet(EntityURL, QueryURL, ALMConnection.getHeader());
+        Assert.assertEquals(
+                "failed obtaining response for requirements collection "
+                        + EntityURL,
+                HttpURLConnection.HTTP_OK,
+                serverResponse.getStatusCode());
+        
+        strResponse = serverResponse.toString();
+        
+        Assert.assertTrue(
+                "didn't find exactly one match, though we posted exactly one entity with '"
+                        + Constants.entityToPostName
+                        + "' name",
+                        strResponse.contains("<Entities TotalResults=\"1\">"));
+        
+        Entities entities =
+                EntityMarshallingUtils.marshal(Entities.class, strResponse);
+
+        for(Entity entity : entities.getEntity()){
+        List<Field> fields = entity.getFields().getField();
+	        for (Field field : fields) {
+	            if (field.getName().equals("id")) {
+	            	strEntityID = field.getValue().toString();
+	                break;
+	            }
+	        }
+        }
+		
+		
+		return strEntityID;
+		
+	}
+}

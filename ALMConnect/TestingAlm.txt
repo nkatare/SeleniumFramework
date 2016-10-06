@@ -1,0 +1,26 @@
+package personlizedALM;
+
+
+import almPackages.Constants;
+
+public class TestingAlm {
+	
+	
+	public static void main(String[] args) throws Exception {
+        ALMConnection.AuthLogin(
+                        "https://" + Constants.HOST + "/qcbin",
+                        Constants.DOMAIN,
+                        Constants.PROJECT,
+                        Constants.USERNAME,
+                        Constants.PASSWORD);
+        
+        String TestSetFodlerName = "Fixed_Income_Analysis_tab", TestSetName = "Topic-Fid.com_FixedIncomeAnalysisTab", TestCaseID = "1111111";
+        String Status = "Passed",ActualTester="a583140";
+        
+        System.out.println(ReadALMEntity.GetTestCaseInstanceID(TestSetFodlerName,TestSetName,TestCaseID)+"\n");
+        
+        //System.out.println(UpdateALMEntity.UpdateTestCaseInstance(ReadALMEntity.GetTestCaseInstanceID(TestSetFodlerName,TestSetName,TestCaseID),Status, ActualTester));
+
+    }
+
+}
