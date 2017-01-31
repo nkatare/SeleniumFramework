@@ -10,16 +10,16 @@ package almPackages;
 public class Constants {
 private Constants() {}
 
-	public static final String HOST = "itec-qc.fmr.com";
+	public static final String HOST = "";
 	public static final String PORT = "";
 
-	public static final String USERNAME = "a583140";
-	public static final String PASSWORD = "vacUUM06!^";
+	public static final String USERNAME = "";
+	public static final String PASSWORD = "";
 
-	public static final String DOMAIN = "PWI";
-	public static final String PROJECT = "PWI";
+	public static final String DOMAIN = "";
+	public static final String PROJECT = "";
    
-	public static final String TESTSET_FOLDER = "Customer_Domain_Data";
+	public static final String TESTSET_FOLDER = "";
 
 
   /**
