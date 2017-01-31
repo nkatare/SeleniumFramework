@@ -14,8 +14,8 @@ public class TestingAlm {
                         Constants.USERNAME,
                         Constants.PASSWORD);
         
-        String TestSetFodlerName = "Fixed_Income_Analysis_tab", TestSetName = "Topic-Fid.com_FixedIncomeAnalysisTab", TestCaseID = "1111111";
-        String Status = "Passed",ActualTester="a583140";
+        String TestSetFodlerName = "", TestSetName = "", TestCaseID = "";
+        String Status = "Passed",ActualTester="";
         
         System.out.println(ReadALMEntity.GetTestCaseInstanceID(TestSetFodlerName,TestSetName,TestCaseID)+"\n");
         
