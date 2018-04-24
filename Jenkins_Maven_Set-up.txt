@@ -1,0 +1,12 @@
+After Changing the POM  file after adding Repositories as Local and removing System scope from Dependencies. Below maven install is required to install local
+Jar files to Local Maven Repository:
+mvn install:install-file -Dfile=${basedir}/lib/SEED_TestCore_v07.jar -DgroupId=SEED_TestCore -DartifactId=SEED_TestCore -Dversion=0.0.1-SNAPSHOT -Dpackaging=jar
+mvn install:install-file -Dfile=${basedir}/lib/ojdbc8.jar -DgroupId=ojdbc8 -DartifactId=ojdbc8 -Dversion=0.0.1-SNAPSHOT -Dpackaging=jar
+
+To Generate Executable Jar file and run it via -jar command
+%MAVEN_HOME%\mvn clean compile assembly:single
+java -jar .\target\SEED_TestMaster-0.0.1-SNAPSHOT-jar-with-dependencies.jar "3"
+
+Execution without creating Executable Jar file
+%MAVEN_HOME%\mvn clean compile
+%MAVEN_HOME%\mvn exec:java -Dexec.mainClass="javaSeedMain.Main" -Dexec.arguments="3"
