@@ -10,3 +10,28 @@ java -jar .\target\SEED_TestMaster-0.0.1-SNAPSHOT-jar-with-dependencies.jar "3"
 Execution without creating Executable Jar file
 %MAVEN_HOME%\mvn clean compile
 %MAVEN_HOME%\mvn exec:java -Dexec.mainClass="javaSeedMain.Main" -Dexec.arguments="3"
+
+=======================================
+1.	Install Git, from ”\\fs2-ads\ADS\@Front-End\Program Installs” path, (Git-2.7.2-64-bit)
+2.	Update the .gitconfig which is pointed by Git program with below details,
+[http]
+               proxy = http://10.64.103.231:50000
+    sslVerify = false
+3.	Make sure the proxy is set-up in IE - 10.64.103.231:50000
+4.	Create Folder Structure:
+<UserFolder>\01Work\workspace\<NewProjects>
+5.	Open Git bash > cd ..\\<UserFolder\\01Work\\workspace\\<NewProjects> (OR) go to the folder and right click -> GitBash Here
+6.	Run below commands:
+a)	git remote add origin http://bitbucket.boigroup.net/scm/pay/gppmp-test-automation.git
+b)	git pull origin master
+7.	Go to Eclipse and open the NewProject and run below maven commands:
+a)	install:install-file -Dfile=${basedir}/lib/SEED_TestCore_v07.jar -DgroupId=SEED_TestCore -DartifactId=SEED_TestCore -Dversion=0.0.1-SNAPSHOT -Dpackaging=jar
+b)	install:install-file -Dfile=${basedir}/lib/ojdbc8.jar -DgroupId=ojdbc8 -DartifactId=ojdbc8 -Dversion=0.0.1-SNAPSHOT -Dpackaging=jar
+c)	clean compile assembly:single
+
+                now your project is ready, and if you still see any issues, please run mvn clean install,
+
+8.	Create your feature branch, and start coding
+9.	Git add <Files you changed one by one>, if you want to add all “git add .”
+10.	Git commit –m “GIVE Commens” like which files and reason for changing, and it should not be too long
+11.	Git push –u origin “feature branch name”
